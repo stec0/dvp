@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import Avatar from '@material-ui/core/Avatar';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -8,12 +8,6 @@ import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 
 import buildCalendar from '../../helpers/calendar.js';
-
-let id = 0;
-function createData(name, calories, fat, carbs, protein) {
-  id += 1;
-  return { id, name, calories, fat, carbs, protein };
-}
 
 const days = [
   'Dimanche',
@@ -25,58 +19,132 @@ const days = [
   'Samedi'
 ]
 
+const months = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December'
+]
+
 const styles = {
   monthHover: {
-    background: 'rgba(0, 0, 0, 0.2)'
+    opacity: '1'
   },
   monthNotHover: {
-    background: 'rgba(0, 0, 0, 0.3)'
+    opacity: '0.6'
   },
   notMonthHover: {
-    background: 'rgba(0, 0, 0, 0.4)'
+    opacity: '0.5'
   },
   notMonthNotHover: {
-    background: 'rgba(0, 0, 0, 0.5)'
+    opacity: '0.2'
+  },
+  reserved: {
+    backgroundColor: 'red'
+  },
+  notReserved: {
+    backgroundColor: 'grey'
+  },
+  onGoingReserved: {
+    backgroundColor: 'orange'
   }
 }
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3)
-];
 
 class Calendar extends Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      month: 'December',
-      year: '2012',
-      weekHovered: 0,
-      day: 0
+      hoveredDay: 0,
+      hoveredMonth: 0,
+      hoveredYear: 0,
+      reserved: false,
+      ongoingReservation: false,
+      ongoingReservedDay: 0,
+      ongoingReservedMonth: 0,
+      ongoingReservedYear: 0,
+      reservations: []
     }
   }
 
-  onHover(week, day) {
-    var self = this;
+  onHover = (date) => {
     return(
-      function() {
-        self.setState(
+      () => {
+        this.setState(
           {
-            weekHovered: week,
-            dayHovered: day
+            hoveredDay: date.day,
+            hoveredMonth: date.month,
+            hoveredYear: date.year
           }
         );
       }
     )
   }
 
+  onHoverOut = () => {
+    this.setState(
+      {
+        hoveredDay: 0,
+        hoveredMonth: 0,
+        hoveredYear: 0
+      }
+    );
+  }
+
+  makeReservation = (date) => {
+    return (
+      () => {
+        if(!this.state.ongoingReservation) {
+          this.setState(
+            {
+              ongoingReservation: true,
+              ongoingReservedDay: date.day,
+              ongoingReservedMonth: date.month,
+              ongoingReservedYear: date.year
+            }
+          );
+        } else {
+          let newReservation;
+          let firstDate = new Date(this.state.ongoingReservedDay + ' ' + months[this.state.ongoingReservedMonth] + ' ' + this.state.ongoingReservedYear + ' 01:00:00');
+          let lastDate = new Date(date.day + ' ' + months[date.month] + ' ' + date.year + ' 01:00:00');
+          if(firstDate <= lastDate) {
+            newReservation = {
+              startDate: firstDate,
+              endDate: lastDate
+            }
+          } else {
+            newReservation = {
+              startDate: lastDate,
+              endDate: firstDate
+            }
+          }
+
+          let reservations = [...this.state.reservations, newReservation];
+
+          this.setState(
+            {
+              reservations: reservations,
+              ongoingReservation: false,
+              ongoingReservedDay: 0,
+              ongoingReservedMonth: 0,
+              ongoingReservedYear: 0
+            }
+          );
+        }
+      }
+    )
+  }
+
   render() {
-    var self = this;
-    var calendar = buildCalendar(this.state.month, this.state.year);
-    console.log(calendar);
+    var calendar = buildCalendar(this.props.month, this.props.year);
 
     let rows = [];
     for(var i=0; i<calendar.length; i++) {
@@ -85,27 +153,54 @@ class Calendar extends Component {
         <TableRow key={i}>
           {
             calendar[i].map(
-              function(day) {
-                let styleHover = styles.monthHover;
-                let styleNotHover = styles.monthNotHover;
-                if(index == 0 && day > 7) {
+              (date) => {
+                // hover opacity styling
+                let styleHover, styleNotHover;
+                if(index === 0 && date.day > 7) {
                   styleHover = styles.notMonthHover;
                   styleNotHover = styles.notMonthNotHover;
-                } else if(index == 0 && day <= 7) {
+                } else if(index === 0 && date.day <= 7) {
                   styleHover = styles.monthHover;
                   styleNotHover = styles.monthNotHover;
-                } else if(index == calendar.length - 1 && day <= 7) {
+                } else if(index === calendar.length - 1 && date.day <= 7) {
                   styleHover = styles.notMonthHover;
                   styleNotHover = styles.notMonthNotHover;
                 } else {
                   styleHover = styles.monthHover;
                   styleNotHover = styles.monthNotHover;
                 }
-                return(
+                let hoverStateStyle = this.state.hoveredYear === date.year && this.state.hoveredMonth === date.month && this.state.hoveredDay === date.day ? styleHover : styleNotHover;
+
+                // past reservation styling
+                let styleReserved;
+                let currentDate = new Date(date.day + ' ' + months[date.month] + ' ' + date.year + ' 01:00:00');
+                for(let reservation of this.state.reservations) {
+                  if(currentDate >= reservation.startDate && currentDate <= reservation.endDate) {
+                    styleReserved = styles.reserved;
+                  }
+                }
+
+                // ongoing reservation styling
+                if(this.state.ongoingReservation) {
+                  let hoveredDate = new Date(this.state.hoveredDay + ' ' + months[this.state.hoveredMonth] + ' ' + this.state.hoveredYear + ' 01:00:00');
+                  let reservedDate = new Date(this.state.ongoingReservedDay + ' ' + months[this.state.ongoingReservedMonth] + ' ' + this.state.ongoingReservedYear + ' 01:00:00');
+                  if((currentDate >= hoveredDate && currentDate <= reservedDate) || (currentDate <= hoveredDate && currentDate >= reservedDate)){
+                    styleReserved =  styles.onGoingReserved;
+                  }
+                }
+
+                styleReserved = styleReserved ? styleReserved : styles.notReserved;
+
+                return (
                     <TableCell
-                        onMouseOver={self.onHover(index, day)}
-                        style={self.state.weekHovered == index && self.state.dayHovered == day ? styleNotHover: styleHover}>
-                      {day}
+                        onMouseOver={this.onHover(date)}
+                        onMouseOut={this.onHoverOut}
+                        style={{...hoverStateStyle, ...styleReserved}}
+                        onClick={this.makeReservation(date)}
+                    >
+                      <div style={{display: 'flex', alignItems: 'center'}}>
+                        {date.day}
+                      </div>
                     </TableCell>
                 )
               }

@@ -18,19 +18,37 @@ function buildCalendar(month, year){
   // first week
   for(let i=0; i<=6; i++) {
     if(current_day<=6){
-      first_week.push(current_date.getDate());
+      first_week.push(
+        {
+          'day': current_date.getDate(),
+          'month': current_date.getMonth(),
+          'year': current_date.getYear()
+        }
+      );
       current_date.setDate(current_date.getDate()+1);
       current_day++;
     } else {
       first_day.setDate(first_day.getDate()-1);
-      first_week.unshift(first_day.getDate());
+      first_week.unshift(
+        {
+          'day': first_day.getDate(),
+          'month': first_day.getMonth(),
+          'year': first_day.getYear()
+        }
+      );
     }
   }
 
   // second, third and fourth week
   function full_week(arr){
     for(let i=0; i<=6; i++){
-      arr.push(current_date.getDate());
+      arr.push(
+        {
+          'day': current_date.getDate(),
+          'month': current_date.getMonth(),
+          'year': current_date.getYear()
+        }
+      );
       current_date.setDate(current_date.getDate()+1);
     }
     return arr
@@ -42,20 +60,32 @@ function buildCalendar(month, year){
 
   // fifth_week
   for(let i=0; i<=6; i++){
-    if(i==0 && current_date.getDate()==1){
+    if(i===0 && current_date.getDate()===1){
       break;
     } else {
-      fifth_week.push(current_date.getDate());
+      fifth_week.push(
+        {
+          'day': current_date.getDate(),
+          'month': current_date.getMonth(),
+          'year': current_date.getYear()
+        }
+      );
       current_date.setDate(current_date.getDate()+1);
     }
   }
 
   // sixth_week
   for(let i=0; i<=6; i++){
-    if(i==0 && current_date.getDate() <= 7){
+    if(i===0 && current_date.getDate() <= 7){
       break;
     } else {
-      sixth_week.push(current_date.getDate());
+      sixth_week.push(
+        {
+          'day': current_date.getDate(),
+          'month': current_date.getMonth(),
+          'year': current_date.getYear()
+        }
+      );
       current_date.setDate(current_date.getDate()+1);
     }
   }
